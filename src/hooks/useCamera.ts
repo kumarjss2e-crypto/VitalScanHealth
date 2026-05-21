@@ -18,6 +18,7 @@ export function useCamera() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const initializationLock = useRef<boolean>(false);
   const mountedRef = useRef<boolean>(false);
+  const retryCount = useRef<number>(0);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -40,8 +41,53 @@ export function useCamera() {
       videoRef.current.srcObject = null;
     }
     initializationLock.current = false;
+    retryCount.current = 0;
     setStatus("idle");
     setError(null);
+  }, []);
+
+  const attachStreamToVideo = useCallback(async (stream: MediaStream): Promise<boolean> => {
+    const maxRetries = 10; // 10 frames = ~160ms
+    
+    for (let i = 0; i < maxRetries; i++) {
+      if (!mountedRef.current) return false;
+      
+      const video = videoRef.current;
+      if (video) {
+        console.log(`[useCamera] Video ref found on attempt ${i + 1}. Attaching stream.`);
+        video.srcObject = stream;
+        video.setAttribute("playsinline", "true");
+        video.setAttribute("autoplay", "true");
+        video.muted = true;
+        
+        return new Promise((resolve) => {
+          const onReady = async () => {
+            try {
+              console.log("[useCamera] Video ready, attempting play()");
+              await video.play();
+              console.log("[useCamera] Playback started successfully");
+              resolve(true);
+            } catch (e) {
+              console.error("[useCamera] play() failed:", e);
+              resolve(false);
+            }
+          };
+
+          if (video.readyState >= 2) {
+            onReady();
+          } else {
+            video.onloadedmetadata = onReady;
+            video.oncanplay = onReady;
+          }
+        });
+      }
+      
+      console.log(`[useCamera] Video ref null on attempt ${i + 1}, waiting for next frame...`);
+      await new Promise(resolve => requestAnimationFrame(resolve));
+    }
+    
+    console.error("[useCamera] Failed to find video ref after max retries");
+    return false;
   }, []);
 
   const startCamera = useCallback(async () => {
@@ -99,79 +145,23 @@ export function useCamera() {
       streamRef.current = newStream;
       setStatus("initializing");
 
-      // 2. Hardware-UI Sync
-      return new Promise<MediaStream | null>((resolve) => {
-        let resolved = false;
-
-        const handleReady = async () => {
-          if (resolved || !mountedRef.current) return;
-          console.log("[useCamera] Video ready state met, attempting playback...");
-          
-          try {
-            const video = videoRef.current;
-            if (!video) throw new Error("Video element disappeared");
-            
-            await video.play();
-            console.log("[useCamera] Playback started successfully");
-            
-            resolved = true;
-            setStatus("ready");
-            initializationLock.current = false;
-            resolve(newStream);
-          } catch (e) {
-            console.error("[useCamera] Playback failed:", e);
-            setError({ type: "PLAYBACK_FAILED", message: "Failed to start video playback. Please ensure your camera is not being used by another app." });
-            setStatus("error");
-            initializationLock.current = false;
-            resolve(null);
-          }
-        };
-
-        const video = videoRef.current;
-        if (!video) {
-          console.error("[useCamera] Critical: Video ref is null after permission granted");
-          setError({ type: "UNKNOWN", message: "Video preview element not found. Please refresh." });
-          setStatus("error");
-          initializationLock.current = false;
-          resolve(null);
-          return;
-        }
-
-        console.log("[useCamera] Attaching stream to video.srcObject");
-        video.srcObject = newStream;
-        
-        // Forced attributes for cross-browser mobile compatibility
-        video.setAttribute("playsinline", "true");
-        video.setAttribute("autoplay", "true");
-        video.muted = true;
-
-        if (video.readyState >= 2) {
-          console.log("[useCamera] Video already has enough data (readyState >= 2)");
-          handleReady();
-        } else {
-          console.log("[useCamera] Waiting for metadata/canplay events...");
-          video.onloadedmetadata = () => {
-            console.log("[useCamera] onloadedmetadata fired");
-            handleReady();
-          };
-          video.oncanplay = () => {
-            console.log("[useCamera] oncanplay fired");
-            handleReady();
-          };
-        }
-
-        // Safety timeout
-        setTimeout(() => {
-          if (!resolved && mountedRef.current) {
-            console.error("[useCamera] Initialization timed out after 8s");
-            setError({ type: "UNKNOWN", message: "Camera initialization timed out. Please try again." });
-            setStatus("error");
-            initializationLock.current = false;
-            stopCamera();
-            resolve(null);
-          }
-        }, 8000);
-      });
+      // 2. Hardware-UI Sync with Retry Logic
+      const success = await attachStreamToVideo(newStream);
+      
+      if (success && mountedRef.current) {
+        setStatus("ready");
+      } else if (mountedRef.current) {
+        console.error("[useCamera] Critical: Failed to attach stream or play video");
+        setError({ 
+          type: "PLAYBACK_FAILED", 
+          message: "Failed to initialize video preview. Please ensure the video element is visible and try again." 
+        });
+        setStatus("error");
+        stopCamera();
+      }
+      
+      initializationLock.current = false;
+      return success ? newStream : null;
 
     } catch (err: any) {
       console.error("[useCamera] Error in startCamera flow:", err);
@@ -191,7 +181,7 @@ export function useCamera() {
       initializationLock.current = false;
       return null;
     }
-  }, [stopCamera]);
+  }, [stopCamera, attachStreamToVideo]);
 
   useEffect(() => {
     return () => {

@@ -1,12 +1,23 @@
 "use client";
 
-import React from "react";
+import React, { useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, Play, ArrowRight, Zap } from "lucide-react";
+import { ShieldCheck, Play, ArrowRight, Zap, Loader2 } from "lucide-react";
 
 const Hero = () => {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  const handleStartScan = (e: React.MouseEvent) => {
+    e.preventDefault();
+    startTransition(() => {
+      router.push("/scan");
+    });
+  };
+
   return (
     <section className="relative pt-32 pb-20 overflow-hidden px-6">
       {/* Background Decorative Elements */}
@@ -40,10 +51,23 @@ const Hero = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4">
-            <Button variant="premium" size="lg" className="rounded-full gap-2 group" asChild>
-              <Link href="/scan">
-                Start Your Scan <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </Link>
+            <Button 
+              variant="premium" 
+              size="lg" 
+              className="rounded-full gap-2 group min-w-[200px]"
+              disabled={isPending}
+              onClick={handleStartScan}
+            >
+              {isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Preparing Scan...
+                </>
+              ) : (
+                <>
+                  Start Your Scan <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
             </Button>
             <Button variant="outline" size="lg" className="rounded-full gap-2 bg-white/5 border-white/10 hover:bg-white/10 text-white">
               <Play className="w-4 h-4 fill-current" /> View Demo
