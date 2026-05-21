@@ -4,6 +4,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { LineChart, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { ClientOnly } from "@/components/ClientOnly";
 
 const DashboardPreview = () => {
   return (
@@ -78,15 +79,17 @@ const DashboardPreview = () => {
                 </div>
                 
                 <div className="flex-1 flex items-end gap-2 px-2">
-                  {[40, 60, 45, 80, 55, 90, 70, 85, 60, 75, 50, 65].map((height, i) => (
-                    <motion.div 
-                      key={i}
-                      initial={{ height: 0 }}
-                      whileInView={{ height: `${height}%` }}
-                      transition={{ delay: i * 0.05, duration: 1 }}
-                      className="flex-1 bg-gradient-to-t from-blue-600/40 to-blue-400/80 rounded-t-sm"
-                    />
-                  ))}
+                  <ClientOnly>
+                    {[40, 60, 45, 80, 55, 90, 70, 85, 60, 75, 50, 65].map((height, i) => (
+                      <motion.div 
+                        key={i}
+                        initial={{ height: 0 }}
+                        whileInView={{ height: `${height}%` }}
+                        transition={{ delay: i * 0.05, duration: 1 }}
+                        className="flex-1 bg-gradient-to-t from-blue-600/40 to-blue-400/80 rounded-t-sm"
+                      />
+                    ))}
+                  </ClientOnly>
                 </div>
               </Card>
             </div>

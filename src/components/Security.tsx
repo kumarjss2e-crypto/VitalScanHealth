@@ -3,6 +3,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { ShieldCheck, Lock, EyeOff, FileText } from "lucide-react";
+import { ClientOnly } from "@/components/ClientOnly";
 
 const Security = () => {
   return (
@@ -76,18 +77,20 @@ const Security = () => {
                 </motion.div>
                 
                 {/* Simulated Data Packets */}
-                {[...Array(6)].map((_, i) => (
-                  <motion.div
-                    key={i}
-                    animate={{ 
-                      x: [0, Math.random() * 400 - 200], 
-                      y: [0, Math.random() * 400 - 200],
-                      opacity: [0, 1, 0]
-                    }}
-                    transition={{ duration: 3, repeat: Infinity, delay: i * 0.5 }}
-                    className="absolute w-1 h-1 bg-blue-400 rounded-full"
-                  />
-                ))}
+                <ClientOnly>
+                  {[...Array(6)].map((_, i) => (
+                    <motion.div
+                      key={i}
+                      animate={{ 
+                        x: [0, (i % 2 === 0 ? 1 : -1) * (50 + i * 20)], 
+                        y: [0, (i % 3 === 0 ? 1 : -1) * (50 + i * 20)],
+                        opacity: [0, 1, 0]
+                      }}
+                      transition={{ duration: 3, repeat: Infinity, delay: i * 0.5 }}
+                      className="absolute w-1 h-1 bg-blue-400 rounded-full"
+                    />
+                  ))}
+                </ClientOnly>
              </div>
           </motion.div>
         </div>

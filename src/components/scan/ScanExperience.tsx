@@ -16,6 +16,8 @@ export default function ScanExperience() {
   const [phase, setPhase] = useState<ScanPhase>("idle");
   const [progress, setProgress] = useState(0);
 
+  const [heartRate, setHeartRate] = useState(72);
+
   // 1. Scan Logic
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -29,6 +31,8 @@ export default function ScanExperience() {
           }
           return p + 1;
         });
+        // Update heart rate for UI feedback safely
+        setHeartRate(72 + Math.floor(Math.random() * 3));
       }, 150); // ~15 second scan
     }
     return () => clearInterval(interval);
@@ -44,24 +48,30 @@ export default function ScanExperience() {
     }
   }, [phase]);
 
-  // 3. UI Sync with Camera Status
   useEffect(() => {
     if (status === "ready" && phase === "idle") {
+      console.log("[ScanExperience] Camera ready, moving to scanning phase");
       setPhase("scanning");
     }
   }, [status, phase]);
 
   const handleRetry = () => {
+    console.log("[ScanExperience] Retry clicked, stopping camera and resetting phase");
     stopCamera();
     setPhase("idle");
     setProgress(0);
+  };
+
+  const startCameraFlow = async () => {
+    console.log("[ScanExperience] Starting camera flow from UI");
+    await startCamera();
   };
 
   if (phase === "results") {
     return (
       <ResultsScreen 
         data={{
-          heartRate: 72,
+          heartRate: heartRate,
           spo2: 98,
           stress: "Low",
           wellnessScore: 88,
@@ -103,7 +113,7 @@ export default function ScanExperience() {
                 className="rounded-2xl py-8 text-lg font-bold"
                 isLoading={status === "requesting" || status === "initializing"}
                 loadingText={status === "requesting" ? "Granting Access..." : "Initializing..."}
-                onClick={startCamera}
+                onClick={startCameraFlow}
               >
                 Begin Scan
               </LoadingButton>
@@ -185,7 +195,7 @@ export default function ScanExperience() {
                        <Heart className="w-3 h-3 text-red-500 fill-red-500 animate-pulse" />
                        <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Heart Rate</span>
                     </div>
-                    <div className="text-xl font-bold font-mono">{phase === "scanning" ? 72 + Math.floor(Math.random() * 3) : "--"} <span className="text-xs font-normal text-white/30">BPM</span></div>
+                    <div className="text-xl font-bold font-mono">{phase === "scanning" ? heartRate : "--"} <span className="text-xs font-normal text-white/30">BPM</span></div>
                  </div>
 
                  <div className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl p-4">
