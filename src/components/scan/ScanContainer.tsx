@@ -12,9 +12,10 @@ type ScanState = "idle" | "ready" | "scanning" | "processing" | "results";
 
 export function ScanContainer() {
   const { status: cameraStatus, error, videoRef, startCamera, stopCamera } = useCamera();
-  const { status: detectionStatus } = useFaceDetection(videoRef);
+  const { status: detectionStatus, debug } = useFaceDetection(videoRef);
   const [scanState, setScanState] = useState<ScanState>("idle");
   const [progress, setProgress] = useState(0);
+  const [showDebug, setShowDebug] = useState(false);
 
   // Sync camera status with scan state
   useEffect(() => {
@@ -246,50 +247,79 @@ export function ScanContainer() {
             </div>
           </div>
         )}
+
+        {/* Debug Overlay */}
+        {showDebug && debug.box && (
+          <div className="absolute inset-0 z-30 pointer-events-none font-mono text-[10px] text-emerald-400 p-4">
+            <div className="absolute border border-emerald-500/50" 
+                 style={{ 
+                   left: `${(1 - (debug.box.xMin + debug.box.width) / (videoRef.current?.videoWidth || 1)) * 100}%`,
+                   top: `${(debug.box.yMin / (videoRef.current?.videoHeight || 1)) * 100}%`,
+                   width: `${(debug.box.width / (videoRef.current?.videoWidth || 1)) * 100}%`,
+                   height: `${(debug.box.height / (videoRef.current?.videoHeight || 1)) * 100}%`
+                 }} 
+            />
+            <div className="bg-black/60 backdrop-blur-sm p-2 rounded-lg inline-block">
+              <div>Ratio: {debug.faceRatio.toFixed(4)} (min: 0.02)</div>
+              <div>H-Offset: {debug.horizontalOffset.toFixed(3)} (max: 0.25)</div>
+              <div>V-Offset: {debug.verticalOffset.toFixed(3)} (max: 0.30)</div>
+              <div>Conf: {(debug.confidence * 100).toFixed(1)}%</div>
+              <div>Status: {detectionStatus}</div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Controls */}
-      <div className="flex flex-col items-center w-full">
+      <div className="flex flex-col items-center w-full px-6">
         {scanState === "idle" && (
           <Button
             variant="premium"
             size="lg"
             onClick={startCamera}
-            className="rounded-full px-12 py-8 text-lg font-bold shadow-xl shadow-blue-600/20"
+            className="rounded-full px-10 py-6 text-base font-bold shadow-xl shadow-blue-600/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
           >
             Enable Camera
           </Button>
         )}
 
         {scanState === "ready" && (
-          <div className="flex flex-col items-center space-y-6">
+          <div className="flex flex-col items-center space-y-4 w-full max-w-sm">
             <Button
               variant="premium"
               size="lg"
-              className="rounded-full px-16 py-8 text-lg font-bold shadow-xl shadow-blue-600/40 hover:scale-105 transition-transform disabled:opacity-50 disabled:grayscale"
+              className="w-full rounded-full py-6 text-base font-bold shadow-xl shadow-blue-600/40 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:grayscale"
               onClick={handleStartScan}
               disabled={detectionStatus !== "ready"}
             >
               {detectionStatus === "ready" ? "Begin Wellness Scan" : "Waiting for Face..."}
             </Button>
-            <button 
-              onClick={handleReset}
-              className="text-white/30 text-[10px] hover:text-white/60 transition-colors uppercase tracking-[0.2em] font-black"
-            >
-              Cancel
-            </button>
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={handleReset}
+                className="text-white/30 text-[10px] hover:text-white/60 transition-colors uppercase tracking-[0.2em] font-black"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => setShowDebug(!showDebug)}
+                className={`text-[10px] uppercase tracking-[0.2em] font-black transition-colors ${showDebug ? "text-emerald-400" : "text-white/10 hover:text-white/30"}`}
+              >
+                Debug
+              </button>
+            </div>
           </div>
         )}
 
         {scanState === "scanning" && (
           <div className="flex flex-col items-center">
-            <div className="px-6 py-3 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-              <span className="text-sm font-bold text-blue-400">Analysis in progress</span>
+            <div className="px-5 py-2.5 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center gap-3">
+              <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+              <span className="text-xs font-bold text-blue-400">Analysis in progress</span>
             </div>
             <button 
               onClick={() => setScanState("ready")}
-              className="mt-6 text-white/20 text-[10px] hover:text-white/40 transition-colors uppercase tracking-[0.2em] font-black"
+              className="mt-4 text-white/20 text-[10px] hover:text-white/40 transition-colors uppercase tracking-[0.2em] font-black"
             >
               Abort Scan
             </button>
