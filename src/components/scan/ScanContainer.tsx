@@ -1,0 +1,254 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { useCamera } from "@/hooks/useCamera";
+import { Button } from "@/components/ui/button";
+import { Camera, RefreshCcw, Loader2, Activity } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ResultsScreen } from "./ResultsScreen";
+
+type ScanState = "idle" | "ready" | "scanning" | "processing" | "results";
+
+export function ScanContainer() {
+  const { status, error, videoRef, startCamera, stopCamera } = useCamera();
+  const [scanState, setScanState] = useState<ScanState>("idle");
+  const [progress, setProgress] = useState(0);
+
+  // Sync camera status with scan state
+  useEffect(() => {
+    if (status === "ready" && scanState === "idle") {
+      setScanState("ready");
+    } else if (status === "idle") {
+      setScanState("idle");
+      setProgress(0);
+    }
+  }, [status, scanState]);
+
+  // Scan progress logic
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (scanState === "scanning") {
+      interval = setInterval(() => {
+        setProgress((prev) => {
+          if (prev >= 100) {
+            clearInterval(interval);
+            setScanState("processing");
+            return 100;
+          }
+          return prev + 1;
+        });
+      }, 80); // ~8 second scan
+    }
+    return () => clearInterval(interval);
+  }, [scanState]);
+
+  // Processing logic
+  useEffect(() => {
+    if (scanState === "processing") {
+      const timer = setTimeout(() => {
+        setScanState("results");
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [scanState]);
+
+  const handleStartScan = () => {
+    setScanState("scanning");
+    setProgress(0);
+  };
+
+  const handleReset = () => {
+    stopCamera();
+    setScanState("idle");
+    setProgress(0);
+  };
+
+  if (scanState === "results") {
+    return (
+      <ResultsScreen 
+        data={{
+          heartRate: 72,
+          spo2: 98,
+          stress: "Low",
+          wellnessScore: 88
+        }} 
+        onReset={handleReset} 
+      />
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center justify-center space-y-8 w-full max-w-2xl mx-auto">
+      {/* Video Preview Area */}
+      <div className="relative w-full aspect-[3/4] md:aspect-video bg-black/40 rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl">
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          playsInline
+          className={`w-full h-full object-cover scale-x-[-1] transition-opacity duration-700 ${
+            status === "ready" ? "opacity-100" : "opacity-0"
+          }`}
+        />
+
+        {/* Scan Frame */}
+        <AnimatePresence>
+          {(scanState === "ready" || scanState === "scanning") && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 flex items-center justify-center pointer-events-none"
+            >
+              <div className="w-[70%] h-[70%] border-2 border-white/20 rounded-[4rem] relative">
+                <div className="absolute inset-0 border-2 border-blue-500/40 rounded-[4rem] animate-pulse" />
+                {scanState === "scanning" && (
+                  <motion.div 
+                    initial={{ top: "0%" }}
+                    animate={{ top: "100%" }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                    className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent shadow-[0_0_15px_rgba(59,130,246,0.5)]"
+                  />
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Overlay States */}
+        <AnimatePresence>
+          {status === "idle" && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center space-y-4"
+            >
+              <div className="w-16 h-16 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
+                <Camera className="w-8 h-8 text-blue-400" />
+              </div>
+              <p className="text-white/60 text-sm max-w-[240px]">
+                Camera access is required to analyze your wellness vitals.
+              </p>
+            </motion.div>
+          )}
+
+          {status === "loading" && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 flex flex-col items-center justify-center bg-black/20 backdrop-blur-sm"
+            >
+              <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
+              <p className="text-white/40 text-[10px] mt-4 uppercase tracking-[0.2em] font-black">
+                Calibrating...
+              </p>
+            </motion.div>
+          )}
+
+          {scanState === "processing" && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-md z-20"
+            >
+              <div className="relative w-16 h-16">
+                <div className="absolute inset-0 rounded-full border-2 border-white/5 border-t-blue-500 animate-spin" />
+                <Activity className="absolute inset-0 m-auto w-6 h-6 text-blue-500 animate-pulse" />
+              </div>
+              <p className="text-white font-bold mt-6">Synthesizing Data</p>
+              <p className="text-white/40 text-[10px] mt-2 uppercase tracking-widest">Applying AI Models</p>
+            </motion.div>
+          )}
+
+          {status === "error" && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center space-y-4 bg-red-500/5 backdrop-blur-sm"
+            >
+              <div className="text-red-400 font-bold">Camera Error</div>
+              <p className="text-white/40 text-xs max-w-[240px]">{error?.message}</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={startCamera}
+                className="rounded-full border-white/10 bg-white/5 hover:bg-white/10"
+              >
+                <RefreshCcw className="w-4 h-4 mr-2" /> Try Again
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Progress Bar Overlay */}
+        {scanState === "scanning" && (
+          <div className="absolute bottom-10 left-10 right-10 z-10">
+            <div className="flex justify-between items-end mb-2">
+              <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Scanning...</span>
+              <span className="text-sm font-mono font-bold text-blue-400">{progress}%</span>
+            </div>
+            <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: `${progress}%` }}
+                className="h-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]" 
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Controls */}
+      <div className="flex flex-col items-center w-full">
+        {scanState === "idle" && (
+          <Button
+            variant="premium"
+            size="lg"
+            onClick={startCamera}
+            className="rounded-full px-12 py-8 text-lg font-bold shadow-xl shadow-blue-600/20"
+          >
+            Enable Camera
+          </Button>
+        )}
+
+        {scanState === "ready" && (
+          <div className="flex flex-col items-center space-y-6">
+            <Button
+              variant="premium"
+              size="lg"
+              className="rounded-full px-16 py-8 text-lg font-bold shadow-xl shadow-blue-600/40 hover:scale-105 transition-transform"
+              onClick={handleStartScan}
+            >
+              Begin Wellness Scan
+            </Button>
+            <button 
+              onClick={stopCamera}
+              className="text-white/30 text-[10px] hover:text-white/60 transition-colors uppercase tracking-[0.2em] font-black"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+
+        {scanState === "scanning" && (
+          <div className="flex flex-col items-center">
+            <div className="px-6 py-3 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center gap-3">
+              <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+              <span className="text-sm font-bold text-blue-400">Analysis in progress</span>
+            </div>
+            <button 
+              onClick={() => setScanState("ready")}
+              className="mt-6 text-white/20 text-[10px] hover:text-white/40 transition-colors uppercase tracking-[0.2em] font-black"
+            >
+              Abort Scan
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

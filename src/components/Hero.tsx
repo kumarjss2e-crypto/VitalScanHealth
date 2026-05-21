@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useTransition } from "react";
+import React, { useTransition, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -10,6 +10,10 @@ import { ShieldCheck, Play, ArrowRight, Zap, Loader2 } from "lucide-react";
 const Hero = () => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    router.prefetch("/scan");
+  }, [router]);
 
   const handleStartScan = (e: React.MouseEvent) => {
     e.preventDefault();
