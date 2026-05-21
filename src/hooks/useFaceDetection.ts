@@ -98,8 +98,14 @@ export function useFaceDetection(videoRef: React.RefObject<HTMLVideoElement | nu
         const horizontalOffset = Math.abs(centerX - videoWidth / 2) / videoWidth;
         const verticalOffset = Math.abs(centerY - videoHeight / 2) / videoHeight;
 
+        console.log(`[useFaceDetection] Face Detected! 
+          W-Ratio: ${faceWidthRatio.toFixed(3)} 
+          H-Off: ${horizontalOffset.toFixed(3)} 
+          V-Off: ${verticalOffset.toFixed(3)} 
+          Conf: ${confidence.toFixed(2)}`);
+
         setDebug({
-          faceRatio: faceWidthRatio, // Use width ratio for debug display as it's more intuitive
+          faceRatio: faceWidthRatio,
           horizontalOffset,
           verticalOffset,
           confidence,
@@ -111,13 +117,12 @@ export function useFaceDetection(videoRef: React.RefObject<HTMLVideoElement | nu
           }
         });
 
-        // RELAXED THRESHOLDS for better UX
-        // Minimum width ratio: 0.1 (10% of frame width)
-        if (faceWidthRatio < 0.1) {
+        // ULTRA-RELAXED THRESHOLDS
+        // Face only needs to be 5% of width and anywhere within 45% of center
+        if (faceWidthRatio < 0.05) {
           setStatus("move-closer");
         } 
-        // 2. Check alignment (forgiving 30% offset)
-        else if (horizontalOffset > 0.3 || verticalOffset > 0.35) {
+        else if (horizontalOffset > 0.45 || verticalOffset > 0.45) {
           setStatus("not-centered");
         } else {
           setStatus("ready");

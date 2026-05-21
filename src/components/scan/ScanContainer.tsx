@@ -260,12 +260,12 @@ export function ScanContainer() {
                  }} 
             />
             <div className="bg-black/60 backdrop-blur-sm p-2 rounded-lg inline-block">
-              <div>W-Ratio: {debug.faceRatio.toFixed(3)} (min: 0.1)</div>
-              <div>H-Offset: {debug.horizontalOffset.toFixed(3)} (max: 0.3)</div>
-              <div>V-Offset: {debug.verticalOffset.toFixed(3)} (max: 0.35)</div>
-              <div>Conf: {(debug.confidence * 100).toFixed(1)}%</div>
-              <div>Status: {detectionStatus}</div>
-            </div>
+                <div>W-Ratio: {debug.faceRatio.toFixed(3)} (min: 0.05)</div>
+                <div>H-Offset: {debug.horizontalOffset.toFixed(3)} (max: 0.45)</div>
+                <div>V-Offset: {debug.verticalOffset.toFixed(3)} (max: 0.45)</div>
+                <div>Conf: {(debug.confidence * 100).toFixed(1)}%</div>
+                <div>Status: {detectionStatus}</div>
+              </div>
           </div>
         )}
       </div>
