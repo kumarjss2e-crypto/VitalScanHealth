@@ -77,39 +77,47 @@ export function useFaceDetection(videoRef: React.RefObject<HTMLVideoElement | nu
         const videoWidth = videoRef.current.videoWidth;
         const videoHeight = videoRef.current.videoHeight;
 
-        // 1. Check size (relaxed threshold)
-        // Previous: 0.05 (too strict for some mobile contexts)
-        // Now: 0.02 (more realistic for standard arm-length phone usage)
-        const faceArea = box.width * box.height;
+        // Determine if coordinates are normalized (0-1) or in pixels
+        // MediaPipe Tfjs usually returns pixels, but we handle both for safety
+        const isNormalized = box.width <= 1 && box.height <= 1;
+        const pixelWidth = isNormalized ? box.width * videoWidth : box.width;
+        const pixelHeight = isNormalized ? box.height * videoHeight : box.height;
+        const pixelX = isNormalized ? box.xMin * videoWidth : box.xMin;
+        const pixelY = isNormalized ? box.yMin * videoHeight : box.yMin;
+
+        // 1. Check size based on Width Ratio (more robust than Area)
+        // We want the face to be at least 15% of the frame width
+        const faceWidthRatio = pixelWidth / videoWidth;
+        const faceArea = pixelWidth * pixelHeight;
         const frameArea = videoWidth * videoHeight;
         const faceRatio = faceArea / frameArea;
 
-        const centerX = box.xMin + box.width / 2;
-        const centerY = box.yMin + box.height / 2;
+        const centerX = pixelX + pixelWidth / 2;
+        const centerY = pixelY + pixelHeight / 2;
         
         const horizontalOffset = Math.abs(centerX - videoWidth / 2) / videoWidth;
         const verticalOffset = Math.abs(centerY - videoHeight / 2) / videoHeight;
 
         setDebug({
-          faceRatio,
+          faceRatio: faceWidthRatio, // Use width ratio for debug display as it's more intuitive
           horizontalOffset,
           verticalOffset,
           confidence,
           box: {
-            xMin: box.xMin,
-            yMin: box.yMin,
-            width: box.width,
-            height: box.height
+            xMin: pixelX,
+            yMin: pixelY,
+            width: pixelWidth,
+            height: pixelHeight
           }
         });
 
-        if (faceRatio < 0.02) {
+        // RELAXED THRESHOLDS for better UX
+        // Minimum width ratio: 0.1 (10% of frame width)
+        if (faceWidthRatio < 0.1) {
           setStatus("move-closer");
         } 
-        // 2. Check alignment (relaxed tolerance)
-        // Previous: 0.15h / 0.2v
-        // Now: 0.25h / 0.3v (more forgiving)
-        else if (horizontalOffset > 0.25 || verticalOffset > 0.3) {
+        // 2. Check alignment (forgiving 30% offset)
+        else if (horizontalOffset > 0.3 || verticalOffset > 0.35) {
           setStatus("not-centered");
         } else {
           setStatus("ready");
