@@ -2,33 +2,37 @@
 
 import React, { useState, useEffect } from "react";
 import { useCamera } from "@/hooks/useCamera";
+import { useFaceDetection } from "@/hooks/useFaceDetection";
 import { Button } from "@/components/ui/button";
-import { Camera, RefreshCcw, Loader2, Activity } from "lucide-react";
+import { Camera, RefreshCcw, Loader2, Activity, User, ShieldCheck } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ResultsScreen } from "./ResultsScreen";
 
 type ScanState = "idle" | "ready" | "scanning" | "processing" | "results";
 
 export function ScanContainer() {
-  const { status, error, videoRef, startCamera, stopCamera } = useCamera();
+  const { status: cameraStatus, error, videoRef, startCamera, stopCamera } = useCamera();
+  const { status: detectionStatus } = useFaceDetection(videoRef);
   const [scanState, setScanState] = useState<ScanState>("idle");
   const [progress, setProgress] = useState(0);
 
   // Sync camera status with scan state
   useEffect(() => {
-    if (status === "ready" && scanState === "idle") {
+    if (cameraStatus === "ready" && scanState === "idle") {
       setScanState("ready");
-    } else if (status === "idle") {
+    } else if (cameraStatus === "idle") {
       setScanState("idle");
       setProgress(0);
     }
-  }, [status, scanState]);
+  }, [cameraStatus, scanState]);
 
   // Scan progress logic
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (scanState === "scanning") {
       interval = setInterval(() => {
+        // If face is lost during scan, we could pause or abort here
+        // For now, we'll continue but you could add validation
         setProgress((prev) => {
           if (prev >= 100) {
             clearInterval(interval);
@@ -53,6 +57,7 @@ export function ScanContainer() {
   }, [scanState]);
 
   const handleStartScan = () => {
+    if (detectionStatus !== "ready") return;
     setScanState("scanning");
     setProgress(0);
   };
@@ -61,6 +66,18 @@ export function ScanContainer() {
     stopCamera();
     setScanState("idle");
     setProgress(0);
+  };
+
+  const getDetectionMessage = () => {
+    switch (detectionStatus) {
+      case "initializing": return "Loading Vision AI...";
+      case "no-face": return "No Face Detected";
+      case "move-closer": return "Move Closer";
+      case "not-centered": return "Center Your Face";
+      case "lighting-low": return "Low Lighting";
+      case "ready": return "Perfect! Hold Still";
+      default: return "";
+    }
   };
 
   if (scanState === "results") {
@@ -87,7 +104,7 @@ export function ScanContainer() {
           muted
           playsInline
           className={`w-full h-full object-cover scale-x-[-1] transition-opacity duration-700 ${
-            status === "ready" ? "opacity-100" : "opacity-0"
+            cameraStatus === "ready" ? "opacity-100" : "opacity-0"
           }`}
         />
 
@@ -100,8 +117,13 @@ export function ScanContainer() {
               exit={{ opacity: 0 }}
               className="absolute inset-0 flex items-center justify-center pointer-events-none"
             >
-              <div className="w-[70%] h-[70%] border-2 border-white/20 rounded-[4rem] relative">
-                <div className="absolute inset-0 border-2 border-blue-500/40 rounded-[4rem] animate-pulse" />
+              <div className={`w-[70%] h-[70%] border-2 rounded-[4rem] relative transition-colors duration-300 ${
+                detectionStatus === "ready" ? "border-emerald-500/50" : "border-white/20"
+              }`}>
+                <div className={`absolute inset-0 border-2 rounded-[4rem] animate-pulse transition-colors duration-300 ${
+                  detectionStatus === "ready" ? "border-emerald-500/30" : "border-blue-500/20"
+                }`} />
+                
                 {scanState === "scanning" && (
                   <motion.div 
                     initial={{ top: "0%" }}
@@ -115,9 +137,33 @@ export function ScanContainer() {
           )}
         </AnimatePresence>
 
+        {/* Real-time Status Badge */}
+        {cameraStatus === "ready" && scanState === "ready" && (
+          <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20">
+            <motion.div 
+              initial={{ y: -20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              className={`px-4 py-2 rounded-full border backdrop-blur-md flex items-center gap-2 transition-colors duration-300 ${
+                detectionStatus === "ready" 
+                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" 
+                  : "bg-black/40 border-white/10 text-white/70"
+              }`}
+            >
+              {detectionStatus === "ready" ? (
+                <ShieldCheck className="w-3 h-3" />
+              ) : (
+                <User className="w-3 h-3" />
+              )}
+              <span className="text-[10px] font-black uppercase tracking-widest">
+                {getDetectionMessage()}
+              </span>
+            </motion.div>
+          </div>
+        )}
+
         {/* Overlay States */}
         <AnimatePresence>
-          {status === "idle" && (
+          {cameraStatus === "idle" && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -133,7 +179,7 @@ export function ScanContainer() {
             </motion.div>
           )}
 
-          {status === "loading" && (
+          {cameraStatus === "loading" && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -163,7 +209,7 @@ export function ScanContainer() {
             </motion.div>
           )}
 
-          {status === "error" && (
+          {cameraStatus === "error" && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -220,13 +266,14 @@ export function ScanContainer() {
             <Button
               variant="premium"
               size="lg"
-              className="rounded-full px-16 py-8 text-lg font-bold shadow-xl shadow-blue-600/40 hover:scale-105 transition-transform"
+              className="rounded-full px-16 py-8 text-lg font-bold shadow-xl shadow-blue-600/40 hover:scale-105 transition-transform disabled:opacity-50 disabled:grayscale"
               onClick={handleStartScan}
+              disabled={detectionStatus !== "ready"}
             >
-              Begin Wellness Scan
+              {detectionStatus === "ready" ? "Begin Wellness Scan" : "Waiting for Face..."}
             </Button>
             <button 
-              onClick={stopCamera}
+              onClick={handleReset}
               className="text-white/30 text-[10px] hover:text-white/60 transition-colors uppercase tracking-[0.2em] font-black"
             >
               Cancel
