@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import * as faceDetection from "@tensorflow-models/face-detection";
 import "@tensorflow/tfjs-core";
 import "@tensorflow/tfjs-backend-webgl";
+import { VitalsEngine, VitalsResult } from "@/lib/scan/VitalsEngine";
 
 export type DetectionStatus = 
   | "initializing" 
@@ -19,6 +20,7 @@ export interface DetectionDebug {
   verticalOffset: number;
   confidence: number;
   box: { xMin: number; yMin: number; width: number; height: number } | null;
+  vitals?: VitalsResult;
 }
 
 export function useFaceDetection(videoRef: React.RefObject<HTMLVideoElement | null>) {
@@ -30,11 +32,16 @@ export function useFaceDetection(videoRef: React.RefObject<HTMLVideoElement | nu
     confidence: 0,
     box: null
   });
+  
   const [detector, setDetector] = useState<faceDetection.FaceDetector | null>(null);
   const requestRef = useRef<number>(null);
   const isProcessing = useRef(false);
+  
+  // Vitals Engine state
+  const vitalsEngine = useRef<VitalsEngine>(new VitalsEngine());
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // Initialize detector
+  // Initialize detector and canvas
   useEffect(() => {
     async function init() {
       try {
@@ -46,6 +53,10 @@ export function useFaceDetection(videoRef: React.RefObject<HTMLVideoElement | nu
         };
         const newDetector = await faceDetection.createDetector(model, detectorConfig);
         setDetector(newDetector);
+
+        // Setup hidden canvas for sampling
+        const canvas = document.createElement('canvas');
+        canvasRef.current = canvas;
       } catch (err) {
         console.error("Failed to initialize face detector:", err);
       }
@@ -74,10 +85,8 @@ export function useFaceDetection(videoRef: React.RefObject<HTMLVideoElement | nu
         const face = faces[0];
         
         // --- 1. DEFENSIVE PROPERTY EXTRACTION (V2) ---
-        // Some runtimes use .box, some .location.box
         const box = face.box || (face as any).location?.box;
         
-        // Extraction for confidence score across different model versions
         let confidence = 0;
         const rawScore = (face as any).score || (face as any).probability || (face as any).confidence;
         
@@ -89,11 +98,8 @@ export function useFaceDetection(videoRef: React.RefObject<HTMLVideoElement | nu
           confidence = parseFloat(rawScore) || 0;
         }
 
-        // AGGRESSIVE FALLBACK: If we have a face object, we have a face.
-        // Many mobile browsers/runtimes return 0 or undefined for score.
         if (confidence < 0.1) {
           confidence = 0.99; 
-          // console.log("[useFaceDetection] Low/Zero confidence detected, forcing to 0.99 because face object exists");
         }
 
         const videoWidth = videoRef.current.videoWidth || 1;
@@ -101,13 +107,7 @@ export function useFaceDetection(videoRef: React.RefObject<HTMLVideoElement | nu
 
         if (!box) {
           console.warn("[useFaceDetection] Face detected but no bounding box found. Using default center box.");
-          // Fallback box: 30% of screen in the middle
-          const fallbackBox = {
-            xMin: 0.35,
-            yMin: 0.35,
-            width: 0.3,
-            height: 0.3
-          };
+          const fallbackBox = { xMin: 0.35, yMin: 0.35, width: 0.3, height: 0.3 };
           processBox(fallbackBox, confidence, videoWidth, videoHeight);
           return;
         }
@@ -122,9 +122,8 @@ export function useFaceDetection(videoRef: React.RefObject<HTMLVideoElement | nu
     }
   }, [detector, videoRef]);
 
-  // Helper to process the box logic to avoid duplication
+  // Helper to process the box logic and sample vitals
   const processBox = (box: any, confidence: number, videoWidth: number, videoHeight: number) => {
-    // Determine if coordinates are normalized (0-1) or in pixels
     const isNormalized = box.width > 0 && box.width <= 1.1 && box.height <= 1.1;
     
     const pixelWidth = isNormalized ? box.width * videoWidth : box.width;
@@ -132,17 +131,33 @@ export function useFaceDetection(videoRef: React.RefObject<HTMLVideoElement | nu
     const pixelX = isNormalized ? box.xMin * videoWidth : box.xMin;
     const pixelY = isNormalized ? box.yMin * videoHeight : box.yMin;
 
-    // Ensure we don't have 0 width/height
     const safeWidth = pixelWidth || (videoWidth * 0.3); 
     const safeHeight = pixelHeight || (videoHeight * 0.3);
 
-    // --- 3. STATUS VALIDATION ---
     const faceWidthRatio = safeWidth / videoWidth;
     const centerX = pixelX + safeWidth / 2;
     const centerY = pixelY + safeHeight / 2;
     
     const horizontalOffset = Math.abs(centerX - videoWidth / 2) / videoWidth;
     const verticalOffset = Math.abs(centerY - videoHeight / 2) / videoHeight;
+
+    // --- VITALS SAMPLING ---
+    let vitals: VitalsResult | undefined;
+    if (videoRef.current && canvasRef.current && faceWidthRatio > 0.1) {
+      const ctx = canvasRef.current.getContext('2d', { willReadFrequently: true });
+      if (ctx) {
+        // Sync canvas size
+        if (canvasRef.current.width !== videoWidth) {
+          canvasRef.current.width = videoWidth;
+          canvasRef.current.height = videoHeight;
+        }
+        
+        // Draw frame and sample
+        ctx.drawImage(videoRef.current, 0, 0, videoWidth, videoHeight);
+        vitalsEngine.current.sample(ctx, pixelX, pixelY, safeWidth, safeHeight);
+        vitals = vitalsEngine.current.estimateMetrics();
+      }
+    }
 
     setDebug({
       faceRatio: faceWidthRatio,
@@ -154,11 +169,10 @@ export function useFaceDetection(videoRef: React.RefObject<HTMLVideoElement | nu
         yMin: pixelY,
         width: safeWidth,
         height: safeHeight
-      }
+      },
+      vitals
     });
 
-    // ULTRA-RELAXED THRESHOLDS FOR SUCCESS
-    // faceWidthRatio: 0.1 to 0.8 is usually a good range for a face
     if (faceWidthRatio < 0.1) {
       setStatus("move-closer");
     } 

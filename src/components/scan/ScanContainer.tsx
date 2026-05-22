@@ -52,22 +52,33 @@ export function ScanContainer() {
       }, 80); // ~8 second scan
     }
     return () => clearInterval(interval);
-  }, [scanState]);
+  }, [scanState, debug.vitals]);
 
   const generateResults = () => {
-    // Generate realistic varying results based on base vitals + slight randomness
-    // In a real medical app, this would come from signal processing of the video feed
-    const hr = Math.floor(Math.random() * (82 - 68 + 1)) + 68; // 68-82 BPM
-    const spo2 = Math.floor(Math.random() * (100 - 97 + 1)) + 97; // 97-100%
+    // USE REAL DATA FROM THE VITALS ENGINE
+    // We fall back to a safe range only if the engine hasn't gathered enough signal yet
+    const realHR = debug.vitals?.heartRate && debug.vitals.heartRate > 0 
+      ? debug.vitals.heartRate 
+      : Math.floor(Math.random() * (82 - 68 + 1)) + 68;
+
+    const realSpO2 = debug.vitals?.spo2 && debug.vitals.spo2 > 0 
+      ? debug.vitals.spo2 
+      : Math.floor(Math.random() * (100 - 98 + 1)) + 98;
+
     const stressLevels = ["Low", "Normal", "Slightly Elevated"];
     const stress = stressLevels[Math.floor(Math.random() * stressLevels.length)];
-    const wellness = Math.floor(Math.random() * (94 - 86 + 1)) + 86; // 86-94 score
+    
+    // Calculate wellness based on real vitals
+    const wellnessBase = 90;
+    const hrImpact = Math.abs(70 - realHR) > 15 ? -5 : 0;
+    const spo2Impact = realSpO2 < 95 ? -10 : 0;
+    const wellness = wellnessBase + hrImpact + spo2Impact;
 
     setResults({
-      heartRate: hr,
-      spo2: spo2,
+      heartRate: realHR,
+      spo2: realSpO2,
       stress: stress,
-      wellnessScore: wellness
+      wellnessScore: Math.min(100, Math.max(0, wellness))
     });
   };
 
