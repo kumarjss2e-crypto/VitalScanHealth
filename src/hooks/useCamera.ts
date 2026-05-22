@@ -52,25 +52,53 @@ export function useCamera() {
       streamRef.current = stream;
 
       // Ensure video element exists before attaching
-      if (!videoRef.current) {
+      const video = videoRef.current;
+      if (!video) {
         throw new Error("Video element not found");
       }
 
-      videoRef.current.srcObject = stream;
+      // 1. Set critical attributes BEFORE assigning srcObject
+      video.muted = true;
+      video.setAttribute("playsinline", "true");
+      video.srcObject = stream;
 
-      // Standard mobile video attributes are handled in the component, 
-      // but we wait for metadata and play() here for stability.
+      // 2. Robust hardware sync flow
       await new Promise<void>((resolve, reject) => {
-        if (!videoRef.current) return reject(new Error("Video element lost"));
-        
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current?.play()
-            .then(resolve)
-            .catch(reject);
+        let isResolved = false;
+
+        const handleReady = async () => {
+          if (isResolved) return;
+          try {
+            console.log("[useCamera] Video ready, attempting play()...");
+            await video.play();
+            console.log("[useCamera] Playback started successfully");
+            isResolved = true;
+            resolve();
+          } catch (e) {
+            console.error("[useCamera] Playback failed:", e);
+            reject(new Error("Playback failed: " + (e as Error).message));
+          }
         };
+
+        // Check if metadata is already loaded (readyState >= 1) 
+        // or if it's already playable (readyState >= 2)
+        if (video.readyState >= 1) {
+          console.log("[useCamera] Metadata already loaded (readyState:", video.readyState, ")");
+          handleReady();
+        } else {
+          console.log("[useCamera] Waiting for metadata/canplay events...");
+          video.onloadedmetadata = handleReady;
+          video.oncanplay = handleReady;
+        }
         
-        // Timeout safety
-        setTimeout(() => reject(new Error("Camera initialization timeout")), 5000);
+        // Timeout safety (increased to 8s for slower devices/mobile)
+        setTimeout(() => {
+          if (!isResolved) {
+            video.onloadedmetadata = null;
+            video.oncanplay = null;
+            reject(new Error("Camera initialization timeout (Hardware Sync Failed)"));
+          }
+        }, 8000);
       });
 
       setStatus("ready");
