@@ -10,12 +10,20 @@ import { ResultsScreen } from "./ResultsScreen";
 
 type ScanState = "idle" | "ready" | "scanning" | "processing" | "results";
 
+interface ResultData {
+  heartRate: number;
+  spo2: number;
+  stress: string;
+  wellnessScore: number;
+}
+
 export function ScanContainer() {
   const { status: cameraStatus, error, videoRef, startCamera, stopCamera } = useCamera();
   const { status: detectionStatus, debug } = useFaceDetection(videoRef);
   const [scanState, setScanState] = useState<ScanState>("idle");
   const [progress, setProgress] = useState(0);
   const [showDebug, setShowDebug] = useState(false);
+  const [results, setResults] = useState<ResultData | null>(null);
 
   // Sync camera status with scan state
   useEffect(() => {
@@ -32,11 +40,10 @@ export function ScanContainer() {
     let interval: NodeJS.Timeout;
     if (scanState === "scanning") {
       interval = setInterval(() => {
-        // If face is lost during scan, we could pause or abort here
-        // For now, we'll continue but you could add validation
         setProgress((prev) => {
           if (prev >= 100) {
             clearInterval(interval);
+            generateResults();
             setScanState("processing");
             return 100;
           }
@@ -46,6 +53,23 @@ export function ScanContainer() {
     }
     return () => clearInterval(interval);
   }, [scanState]);
+
+  const generateResults = () => {
+    // Generate realistic varying results based on base vitals + slight randomness
+    // In a real medical app, this would come from signal processing of the video feed
+    const hr = Math.floor(Math.random() * (82 - 68 + 1)) + 68; // 68-82 BPM
+    const spo2 = Math.floor(Math.random() * (100 - 97 + 1)) + 97; // 97-100%
+    const stressLevels = ["Low", "Normal", "Slightly Elevated"];
+    const stress = stressLevels[Math.floor(Math.random() * stressLevels.length)];
+    const wellness = Math.floor(Math.random() * (94 - 86 + 1)) + 86; // 86-94 score
+
+    setResults({
+      heartRate: hr,
+      spo2: spo2,
+      stress: stress,
+      wellnessScore: wellness
+    });
+  };
 
   // Processing logic
   useEffect(() => {
@@ -67,6 +91,7 @@ export function ScanContainer() {
     stopCamera();
     setScanState("idle");
     setProgress(0);
+    setResults(null);
   };
 
   const getDetectionMessage = () => {
@@ -81,15 +106,10 @@ export function ScanContainer() {
     }
   };
 
-  if (scanState === "results") {
+  if (scanState === "results" && results) {
     return (
       <ResultsScreen 
-        data={{
-          heartRate: 72,
-          spo2: 98,
-          stress: "Low",
-          wellnessScore: 88
-        }} 
+        data={results} 
         onReset={handleReset} 
       />
     );
