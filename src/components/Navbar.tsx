@@ -52,9 +52,14 @@ const Navbar = () => {
               {link.name}
             </Link>
           ))}
-          <Button variant="premium" className="rounded-full px-6">
-            Get Started
-          </Button>
+          <div className="flex items-center gap-3 ml-4">
+            <Button variant="ghost" className="text-white hover:bg-white/10" asChild>
+              <Link href="/login">Login</Link>
+            </Button>
+            <Button variant="premium" className="rounded-full px-6" asChild>
+              <Link href="/signup">Get Started</Link>
+            </Button>
+          </div>
         </div>
 
         {/* Mobile Menu Toggle */}
@@ -85,9 +90,14 @@ const Navbar = () => {
                 {link.name}
               </Link>
             ))}
-            <Button variant="premium" className="w-full rounded-full py-6 text-lg">
-              Get Started
-            </Button>
+            <div className="flex flex-col gap-3 mt-4">
+              <Button variant="outline" className="w-full rounded-full py-6 text-lg bg-white/5 border-white/10 text-white" asChild onClick={() => setMobileMenuOpen(false)}>
+                <Link href="/login">Login</Link>
+              </Button>
+              <Button variant="premium" className="w-full rounded-full py-6 text-lg" asChild onClick={() => setMobileMenuOpen(false)}>
+                <Link href="/signup">Get Started</Link>
+              </Button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

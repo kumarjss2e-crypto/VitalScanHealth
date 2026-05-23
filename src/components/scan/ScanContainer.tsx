@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Camera, RefreshCcw, Loader2, Activity, User, ShieldCheck } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ResultsScreen } from "./ResultsScreen";
+import { createClient } from "@/utils/supabase/client";
+import { toast } from "sonner";
 
 type ScanState = "idle" | "ready" | "scanning" | "processing" | "results";
 
@@ -80,6 +82,40 @@ export function ScanContainer() {
       stress: stress,
       wellnessScore: Math.min(100, Math.max(0, wellness))
     });
+
+    // Save to Supabase
+    saveToSupabase({
+      heartRate: realHR,
+      spo2: realSpO2,
+      stress: stress,
+      wellnessScore: Math.min(100, Math.max(0, wellness))
+    });
+  };
+
+  const saveToSupabase = async (data: ResultData) => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) return;
+
+    try {
+      const { error } = await supabase.from('scans').insert({
+        user_id: user.id,
+        provider: 'vital-scan-v3',
+        heart_rate: data.heartRate,
+        spo2: data.spo2,
+        stress_level: data.stress === 'Low' ? 20 : data.stress === 'Normal' ? 45 : 75,
+        wellness_score: data.wellnessScore,
+        duration_seconds: 8,
+        device_type: 'Web'
+      });
+
+      if (error) throw error;
+      console.log('Scan saved successfully');
+    } catch (err) {
+      console.error('Failed to save scan:', err);
+      toast.error('Failed to sync scan results to cloud');
+    }
   };
 
   // Processing logic

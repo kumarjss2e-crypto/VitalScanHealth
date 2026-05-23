@@ -19,6 +19,10 @@ export interface Database {
           gender: string | null
           height_cm: number | null
           weight_kg: number | null
+          wellness_goals: string[] | null
+          lifestyle_preferences: Json | null
+          health_focus_areas: string[] | null
+          onboarding_completed: boolean
           created_at: string
           updated_at: string
         }
@@ -31,6 +35,10 @@ export interface Database {
           gender?: string | null
           height_cm?: number | null
           weight_kg?: number | null
+          wellness_goals?: string[] | null
+          lifestyle_preferences?: Json | null
+          health_focus_areas?: string[] | null
+          onboarding_completed?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -43,6 +51,42 @@ export interface Database {
           gender?: string | null
           height_cm?: number | null
           weight_kg?: number | null
+          wellness_goals?: string[] | null
+          lifestyle_preferences?: Json | null
+          health_focus_areas?: string[] | null
+          onboarding_completed?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      subscriptions: {
+        Row: {
+          id: string
+          user_id: string
+          plan_id: string
+          status: string
+          current_period_end: string | null
+          cancel_at_period_end: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          plan_id: string
+          status: string
+          current_period_end?: string | null
+          cancel_at_period_end?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          plan_id?: string
+          status?: string
+          current_period_end?: string | null
+          cancel_at_period_end?: boolean
           created_at?: string
           updated_at?: string
         }

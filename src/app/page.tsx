@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+import { createClient } from "@/utils/supabase/server";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import TrustedBy from "@/components/TrustedBy";
@@ -9,7 +11,14 @@ import CTA from "@/components/CTA";
 import Footer from "@/components/Footer";
 import { BackgroundEffects } from "@/components/BackgroundEffects";
 
-export default function Home() {
+export default async function Home() {
+  const supabase = await createClient();
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (session) {
+    redirect("/dashboard");
+  }
+
   return (
     <main className="min-h-screen bg-[#020617] selection:bg-blue-500/30">
       <BackgroundEffects />

@@ -10,6 +10,22 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     gender TEXT,
     height_cm DECIMAL,
     weight_kg DECIMAL,
+    wellness_goals TEXT[], -- Added for onboarding
+    lifestyle_preferences JSONB, -- Added for onboarding
+    health_focus_areas TEXT[], -- Added for onboarding
+    onboarding_completed BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 1.1 Subscriptions Table
+CREATE TABLE IF NOT EXISTS public.subscriptions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    plan_id TEXT NOT NULL, -- 'free', 'pro', 'enterprise'
+    status TEXT NOT NULL, -- 'active', 'canceled', 'past_due'
+    current_period_end TIMESTAMPTZ,
+    cancel_at_period_end BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -109,8 +125,12 @@ ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.scan_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.device_info ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
+
+-- Subscriptions: Users can view only their own subscription
+CREATE POLICY "Users can view own subscription" ON public.subscriptions FOR SELECT USING (auth.uid() = user_id);
 
 -- Profiles: Users can view and edit only their own profile
 CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
