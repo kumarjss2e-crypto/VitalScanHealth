@@ -39,7 +39,9 @@ export default function SignupPage() {
       if (error) throw error
 
       toast.success('Account created! Please check your email to verify.')
-      router.push('/login')
+      setTimeout(() => {
+        router.push('/login')
+      }, 1500)
     } catch (error: any) {
       toast.error(error.message || 'Failed to sign up')
     } finally {

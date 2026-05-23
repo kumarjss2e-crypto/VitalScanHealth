@@ -96,7 +96,17 @@ export function ScanContainer() {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) return;
+    if (!user) {
+      // GUEST FLOW: Store scan result in local storage for later recovery
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('pending_scan_result', JSON.stringify({
+          ...data,
+          timestamp: new Date().toISOString()
+        }));
+        console.log('Guest scan saved to local storage');
+      }
+      return;
+    }
 
     try {
       const { error } = await (supabase.from('scans') as any).insert({

@@ -4,8 +4,10 @@ import React from "react";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Heart, Activity, Brain, ShieldCheck, RotateCcw, ArrowRight } from "lucide-react";
+import { Heart, Activity, Brain, ShieldCheck, RotateCcw, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
+import { createClient } from "@/utils/supabase/client";
+import { useRouter } from "next/navigation";
 
 interface ResultData {
   heartRate: number;
@@ -15,6 +17,18 @@ interface ResultData {
 }
 
 export function ResultsScreen({ data, onReset }: { data: ResultData; onReset: () => void }) {
+  const router = useRouter();
+  const supabase = createClient();
+
+  const handleDashboardRedirect = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      router.push('/dashboard');
+    } else {
+      router.push('/login');
+    }
+  };
+
   const cards = [
     {
       title: "Heart Rate",
@@ -108,18 +122,20 @@ export function ResultsScreen({ data, onReset }: { data: ResultData; onReset: ()
         ))}
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 pt-4">
-        <Button variant="premium" className="flex-1 rounded-full py-8 text-lg font-bold shadow-xl" asChild>
-          <Link href="/copilot">
-            Chat with AI Copilot <ArrowRight className="ml-2 w-5 h-5" />
-          </Link>
+      <div className="flex items-center justify-center gap-4 pt-6">
+        <Button 
+          variant="premium" 
+          className="rounded-2xl px-8 py-6 text-sm font-bold shadow-lg h-auto" 
+          onClick={handleDashboardRedirect}
+        >
+          <LayoutDashboard className="mr-2 w-4 h-4" /> Go to Dashboard
         </Button>
         <Button 
           variant="outline" 
           onClick={onReset}
-          className="rounded-full py-8 px-8 border-white/10 bg-white/5 hover:bg-white/10 text-white font-bold"
+          className="rounded-2xl px-8 py-6 border-white/10 bg-white/5 hover:bg-white/10 text-white font-bold text-sm h-auto"
         >
-          <RotateCcw className="w-5 h-5 mr-2" /> New Scan
+          <RotateCcw className="w-4 h-4 mr-2" /> New Scan
         </Button>
       </div>
     </div>

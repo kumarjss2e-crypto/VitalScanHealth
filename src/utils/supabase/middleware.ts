@@ -36,20 +36,17 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (
-    !user &&
-    !request.nextUrl.pathname.startsWith('/login') &&
-    !request.nextUrl.pathname.startsWith('/signup') &&
-    !request.nextUrl.pathname.startsWith('/auth') &&
-    request.nextUrl.pathname !== '/'
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
+  const isAuthPage = request.nextUrl.pathname.startsWith('/login') || 
+                     request.nextUrl.pathname.startsWith('/signup') ||
+                     request.nextUrl.pathname.startsWith('/auth')
+  const isOnboardingPage = request.nextUrl.pathname === '/onboarding'
+
+  if (!user && !isAuthPage && request.nextUrl.pathname !== '/') {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
 
-  // Check onboarding status
   if (user) {
     const { data: profileData } = await supabase
       .from('profiles')
@@ -59,18 +56,26 @@ export async function updateSession(request: NextRequest) {
 
     const profile = profileData as any;
 
-    if (
-      profile && 
-      !profile.onboarding_completed && 
-      request.nextUrl.pathname !== '/onboarding' &&
-      !request.nextUrl.pathname.startsWith('/auth')
-    ) {
+    // If user is logged in but hasn't finished onboarding, force them to onboarding
+    if (profile && !profile.onboarding_completed && !isOnboardingPage && !request.nextUrl.pathname.startsWith('/auth')) {
       const url = request.nextUrl.clone()
       url.pathname = '/onboarding'
       return NextResponse.redirect(url)
     }
 
-    if (profile?.onboarding_completed && request.nextUrl.pathname === '/onboarding') {
+    // If user is logged in and is on an auth page, redirect to dashboard or onboarding
+    if (isAuthPage) {
+      const url = request.nextUrl.clone()
+      if (profile && !profile.onboarding_completed) {
+        url.pathname = '/onboarding'
+      } else {
+        url.pathname = '/dashboard'
+      }
+      return NextResponse.redirect(url)
+    }
+
+    // If onboarding is done and user tries to go to onboarding, redirect to dashboard
+    if (profile?.onboarding_completed && isOnboardingPage) {
       const url = request.nextUrl.clone()
       url.pathname = '/dashboard'
       return NextResponse.redirect(url)

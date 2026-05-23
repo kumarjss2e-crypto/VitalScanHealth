@@ -32,6 +32,8 @@ export default function LoginPage() {
       if (error) throw error
 
       toast.success('Welcome back!')
+      
+      // Navigate immediately and refresh to ensure session is recognized
       router.push('/dashboard')
       router.refresh()
     } catch (error: any) {

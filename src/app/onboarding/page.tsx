@@ -92,7 +92,12 @@ export default function OnboardingPage() {
         if (error) throw error
 
         toast.success('Onboarding complete!')
-        router.push('/dashboard')
+        
+        // Use a small timeout to ensure state is settled before redirect
+        setTimeout(() => {
+          router.push('/dashboard')
+          router.refresh()
+        }, 100)
       } catch (error: any) {
         toast.error(error.message || 'Failed to save preferences')
       } finally {

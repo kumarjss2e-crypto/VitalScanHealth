@@ -4,6 +4,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import Link from "next/link";
 
 const CTA = () => {
   return (
@@ -29,8 +30,8 @@ const CTA = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-6 justify-center">
-              <Button size="lg" className="bg-white text-blue-600 hover:bg-white/90 rounded-full px-10 py-7 text-lg font-bold shadow-xl">
-                Get Started Free
+              <Button size="lg" className="bg-white text-blue-600 hover:bg-white/90 rounded-full px-10 py-7 text-lg font-bold shadow-xl" asChild>
+                <Link href="/signup">Get Started Free</Link>
               </Button>
               <Button size="lg" variant="outline" className="border-white/20 bg-transparent text-white hover:bg-white/10 rounded-full px-10 py-7 text-lg font-bold">
                 Contact Sales
