@@ -13,25 +13,23 @@ export const profileService = {
       .from('profiles')
       .select('*')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
-    return data;
+    return { data, error };
   },
 
   /**
    * Update user profile
    */
   async updateProfile(userId: string, profile: UpdateProfile) {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase
       .from('profiles')
-      .update(profile)
+      .update(profile as any) as any)
       .eq('id', userId)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
-    return data;
+    return { data, error };
   },
 
   /**

@@ -99,7 +99,7 @@ export function ScanContainer() {
     if (!user) return;
 
     try {
-      const { error } = await supabase.from('scans').insert({
+      const { error } = await (supabase.from('scans') as any).insert({
         user_id: user.id,
         provider: 'vital-scan-v3',
         heart_rate: data.heartRate,

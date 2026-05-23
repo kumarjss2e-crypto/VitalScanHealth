@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server'
+import { Database } from '@/types/supabase'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Check, Zap, Crown, Building2 } from 'lucide-react'
@@ -56,12 +57,16 @@ const plans = [
 export default async function BillingPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) return null
   
-  const { data: subscription } = await supabase
-    .from('subscriptions')
-    .select('*')
-    .eq('user_id', user?.id)
-    .single()
+  const { data: subscriptionData } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+  const subscription = subscriptionData as any;
 
   return (
     <div className="space-y-8">

@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server'
+import { Database } from '@/types/supabase'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,12 +10,16 @@ import { User, Mail, Calendar, Ruler, Weight } from 'lucide-react'
 export default async function ProfilePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) return null
   
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user?.id)
-    .single()
+  const { data: profileData } = await supabase
+       .from('profiles')
+       .select('*')
+       .eq('id', user.id)
+       .maybeSingle()
+
+  const profile = profileData as any;
 
   return (
     <div className="space-y-8 max-w-4xl">

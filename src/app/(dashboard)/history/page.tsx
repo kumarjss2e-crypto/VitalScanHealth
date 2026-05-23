@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server'
+import { Database } from '@/types/supabase'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { 
   Activity, 
@@ -15,12 +16,16 @@ import { format } from 'date-fns'
 export default async function HistoryPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) return null
   
-  const { data: scans } = await supabase
+  const { data: scansData } = await supabase
     .from('scans')
     .select('*')
-    .eq('user_id', user?.id)
+    .eq('user_id', user.id)
     .order('created_at', { ascending: false })
+
+  const scans = scansData as any[] | null;
 
   return (
     <div className="space-y-8">

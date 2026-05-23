@@ -107,7 +107,7 @@ const CopilotPage = () => {
           <ChatInterface 
             messages={messages}
             input={input}
-            setInput={setInput}
+            onInputChange={(e) => setInput(e.target.value)}
             onSend={handleSend}
             isLoading={isLoading}
           />

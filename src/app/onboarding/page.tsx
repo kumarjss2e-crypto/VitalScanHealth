@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { createClient } from '@/utils/supabase/client'
+import { Database } from '@/types/supabase'
 import { toast } from 'sonner'
 import { 
   Heart, 
@@ -79,8 +80,8 @@ export default function OnboardingPage() {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) throw new Error('No user found')
 
-        const { error } = await supabase
-          .from('profiles')
+        // Force cast the from() call to bypass complex Supabase type inference during build
+        const { error } = await (supabase.from('profiles') as any)
           .update({
             wellness_goals: selections.goals,
             health_focus_areas: selections.focus,

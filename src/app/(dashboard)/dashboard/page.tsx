@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server'
+import { Database } from '@/types/supabase'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { 
   Activity, 
@@ -16,15 +17,18 @@ export default async function DashboardPage() {
   const supabase = await createClient()
   
   const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) return null
   
   // Fetch latest scan
-  const { data: latestScan } = await supabase
+  const { data: latestScanData } = await supabase
     .from('scans')
     .select('*')
-    .eq('user_id', user?.id)
+    .eq('user_id', user.id)
     .order('created_at', { ascending: false })
-    .limit(1)
-    .single()
+    .maybeSingle()
+
+  const latestScan = latestScanData as any;
 
   // Fetch wellness score trends (mock data for now if empty)
   const wellnessScore = latestScan?.wellness_score || 0

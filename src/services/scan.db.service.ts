@@ -26,12 +26,11 @@ export const scanService = {
   async saveScan(scan: InsertScan) {
     const { data, error } = await supabase
       .from('scans')
-      .insert(scan)
+      .insert(scan as any)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
-    return data;
+    return { data, error };
   },
 
   /**

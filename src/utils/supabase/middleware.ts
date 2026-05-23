@@ -51,11 +51,13 @@ export async function updateSession(request: NextRequest) {
 
   // Check onboarding status
   if (user) {
-    const { data: profile } = await supabase
+    const { data: profileData } = await supabase
       .from('profiles')
       .select('onboarding_completed')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
+
+    const profile = profileData as any;
 
     if (
       profile && 

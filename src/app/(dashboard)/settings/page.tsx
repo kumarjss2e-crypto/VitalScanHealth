@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server'
+import { Database } from '@/types/supabase'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -8,12 +9,16 @@ import { Bell, Shield, Moon, Globe, Trash2, Smartphone } from 'lucide-react'
 export default async function SettingsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) return null
   
-  const { data: settings } = await supabase
-    .from('user_settings')
-    .select('*')
-    .eq('user_id', user?.id)
-    .single()
+  const { data: settingsData } = await supabase
+       .from('user_settings')
+       .select('*')
+       .eq('user_id', user.id)
+       .maybeSingle()
+
+  const settings = settingsData as any;
 
   return (
     <div className="space-y-8 max-w-4xl">
