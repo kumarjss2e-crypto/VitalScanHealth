@@ -49,7 +49,7 @@ export default async function DashboardPage() {
   const recoveryScore = latestScan ? Math.min(100, (latestScan.hrv || 50) + (100 - latestScan.stress_level) / 2) : 0
   
   // 3. Wellness Consistency
-  const last7DaysScans = scanHistory?.filter(s => {
+  const last7DaysScans = (scanHistory as any[])?.filter(s => {
     const date = new Date(s.created_at)
     const weekAgo = new Date()
     weekAgo.setDate(weekAgo.getDate() - 7)
@@ -58,7 +58,7 @@ export default async function DashboardPage() {
   const consistencyScore = Math.min(100, (last7DaysScans.length / 7) * 100)
 
   // 4. Biometric Stability (HR variance)
-  const hrValues = scanHistory?.map(s => s.heart_rate).filter(Boolean) as number[] || []
+  const hrValues = (scanHistory as any[])?.map(s => s.heart_rate).filter(Boolean) as number[] || []
   const hrMean = hrValues.reduce((a, b) => a + b, 0) / hrValues.length
   const hrStability = hrValues.length > 1 
     ? Math.max(0, 100 - (hrValues.reduce((a, b) => a + Math.abs(b - hrMean), 0) / hrValues.length) * 2)
@@ -218,7 +218,7 @@ export default async function DashboardPage() {
                 {[...Array(7)].map((_, i) => {
                   const day = new Date()
                   day.setDate(day.getDate() - (6 - i))
-                  const hasScan = scanHistory?.some(s => format(new Date(s.created_at), 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd'))
+                  const hasScan = (scanHistory as any[])?.some(s => format(new Date(s.created_at), 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd'))
                   return (
                     <div 
                       key={i} 
