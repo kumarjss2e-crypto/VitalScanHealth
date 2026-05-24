@@ -29,7 +29,13 @@ export default function LoginPage() {
         password,
       })
 
-      if (error) throw error
+      if (error) {
+        if (error.message.includes('Email not confirmed')) {
+          toast.error('Email not verified. Please check your inbox.')
+          return
+        }
+        throw error
+      }
 
       toast.success('Welcome back!')
       

@@ -17,6 +17,7 @@ export default function SignupPage() {
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
   const [loading, setLoading] = useState(false)
+  const [isSubmitted, setIsSubmitted] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -38,10 +39,8 @@ export default function SignupPage() {
 
       if (error) throw error
 
-      toast.success('Account created! Please check your email to verify.')
-      setTimeout(() => {
-        router.push('/login')
-      }, 1500)
+      setIsSubmitted(true)
+      toast.success('Registration successful!')
     } catch (error: any) {
       toast.error(error.message || 'Failed to sign up')
     } finally {
@@ -49,10 +48,41 @@ export default function SignupPage() {
     }
   }
 
+  if (isSubmitted) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-black relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
+        
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-md px-4 z-10"
+        >
+          <Card className="bg-zinc-900/50 border-zinc-800 backdrop-blur-xl text-center p-8">
+            <div className="w-16 h-16 rounded-full bg-blue-600/20 flex items-center justify-center mx-auto mb-6">
+              <HeartPulse className="w-8 h-8 text-blue-500" />
+            </div>
+            <CardTitle className="text-2xl text-white mb-2">Check your email</CardTitle>
+            <p className="text-zinc-400 mb-8 leading-relaxed">
+              We&apos;ve sent a verification link to <span className="text-white font-medium">{email}</span>. 
+              Please click the link to activate your account.
+            </p>
+            <Button 
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white"
+              asChild
+            >
+              <Link href="/login">Return to Login</Link>
+            </Button>
+          </Card>
+        </motion.div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-black relative overflow-hidden">
       {/* Background Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
       
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -61,7 +91,7 @@ export default function SignupPage() {
         className="w-full max-w-md px-4 z-10"
       >
         <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 rounded-xl bg-emerald-600 flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(5,150,105,0.4)]">
+          <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(37,99,235,0.4)]">
             <HeartPulse className="w-6 h-6 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-white tracking-tight">VitalScan</h1>
@@ -86,7 +116,7 @@ export default function SignupPage() {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   required
-                  className="bg-zinc-950/50 border-zinc-800 text-white focus:border-emerald-500/50 focus:ring-emerald-500/20"
+                  className="bg-zinc-950/50 border-zinc-800 text-white focus:border-blue-500/50 focus:ring-blue-500/20"
                 />
               </div>
               <div className="space-y-2">
@@ -98,7 +128,7 @@ export default function SignupPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="bg-zinc-950/50 border-zinc-800 text-white focus:border-emerald-500/50 focus:ring-emerald-500/20"
+                  className="bg-zinc-950/50 border-zinc-800 text-white focus:border-blue-500/50 focus:ring-blue-500/20"
                 />
               </div>
               <div className="space-y-2">
@@ -109,14 +139,14 @@ export default function SignupPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="bg-zinc-950/50 border-zinc-800 text-white focus:border-emerald-500/50 focus:ring-emerald-500/20"
+                  className="bg-zinc-950/50 border-zinc-800 text-white focus:border-blue-500/50 focus:ring-blue-500/20"
                 />
               </div>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
               <Button 
                 type="submit" 
-                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_15px_rgba(5,150,105,0.3)] transition-all"
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_15px_rgba(37,99,235,0.3)] transition-all"
                 disabled={loading}
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
@@ -124,7 +154,7 @@ export default function SignupPage() {
               </Button>
               <p className="text-sm text-zinc-500 text-center">
                 Already have an account?{' '}
-                <Link href="/login" className="text-emerald-400 hover:text-emerald-300 transition-colors">
+                <Link href="/login" className="text-blue-400 hover:text-blue-300 transition-colors">
                   Login
                 </Link>
               </p>

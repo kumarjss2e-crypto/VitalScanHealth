@@ -82,17 +82,17 @@ export default async function DashboardPage() {
     <div className="space-y-8 pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Intelligence Dashboard</h1>
-          <p className="text-zinc-400 mt-1">Advanced wellness analytics derived from your biometric signals.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">Intelligence Dashboard</h1>
+          <p className="text-zinc-500 dark:text-zinc-400 mt-1 text-sm md:text-base">Advanced wellness analytics derived from your biometric signals.</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800" asChild>
+          <Button variant="outline" className="border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-900 dark:text-white" asChild>
             <Link href="/history">
               <Calendar className="w-4 h-4 mr-2" />
               History
             </Link>
           </Button>
-          <Button className="bg-blue-600 hover:bg-blue-500 shadow-[0_0_15px_rgba(37,99,235,0.3)]" asChild>
+          <Button className="bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_15px_rgba(37,99,235,0.3)]" asChild>
             <Link href="/scan">
               <Activity className="w-4 h-4 mr-2" />
               Start New Scan
@@ -104,7 +104,7 @@ export default async function DashboardPage() {
       {/* Main Intelligence Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {analytics.map((item) => (
-          <Card key={item.label} className="bg-zinc-900/50 border-zinc-800 backdrop-blur-xl group hover:border-zinc-700 transition-all">
+          <Card key={item.label} className="bg-white dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 backdrop-blur-xl group hover:border-blue-500/50 dark:hover:border-zinc-700 transition-all shadow-sm dark:shadow-none">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className={`p-2.5 rounded-xl ${item.color.replace('text-', 'bg-')}/10 border border-${item.color.split('-')[1]}-500/20`}>
@@ -112,9 +112,9 @@ export default async function DashboardPage() {
                 </div>
               </div>
               <div>
-                <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">{item.label}</p>
-                <h3 className="text-2xl font-bold mt-1 text-white">{item.value}</h3>
-                <p className="text-[10px] text-zinc-500 mt-1">{item.desc}</p>
+                <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">{item.label}</p>
+                <h3 className="text-2xl font-bold mt-1 text-zinc-900 dark:text-white">{item.value}</h3>
+                <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-1">{item.desc}</p>
               </div>
             </CardContent>
           </Card>
@@ -123,40 +123,40 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Core Vitals */}
-        <Card className="lg:col-span-8 bg-zinc-900/50 border-zinc-800 backdrop-blur-xl">
+        <Card className="lg:col-span-8 bg-white dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 backdrop-blur-xl shadow-sm dark:shadow-none">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
-              <CardTitle>Recent Biometrics</CardTitle>
-              <CardDescription>Latest values from your scan on {latestScan ? format(new Date(latestScan.created_at), 'MMM d, h:mm a') : 'no date'}</CardDescription>
+              <CardTitle className="text-zinc-900 dark:text-white text-lg md:text-xl">Recent Biometrics</CardTitle>
+              <CardDescription className="text-zinc-500 dark:text-zinc-400 text-xs">Latest values from your scan on {latestScan ? format(new Date(latestScan.created_at), 'MMM d, h:mm a') : 'no date'}</CardDescription>
             </div>
-            <Badge variant="outline" className="bg-blue-500/5 text-blue-400 border-blue-500/20">Live Sync</Badge>
+            <Badge variant="outline" className="bg-blue-50 dark:bg-blue-500/5 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-500/20">Live Sync</Badge>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
               {vitals.map((v) => (
-                <div key={v.label} className="p-4 rounded-2xl bg-zinc-950/50 border border-zinc-800/50">
+                <div key={v.label} className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-100 dark:border-zinc-800/50">
                   <div className="flex items-center gap-2 mb-2">
                     <v.icon className={`w-3.5 h-3.5 ${v.color}`} />
-                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">{v.label}</span>
+                    <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">{v.label}</span>
                   </div>
-                  <div className="text-xl font-bold text-white">{v.value}</div>
+                  <div className="text-xl font-bold text-zinc-900 dark:text-white">{v.value}</div>
                   <div className="flex items-center gap-1.5 mt-1">
                     <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                    <span className="text-[10px] text-emerald-500/80 font-medium">{v.status}</span>
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-500/80 font-medium">{v.status}</span>
                   </div>
                 </div>
               ))}
             </div>
 
             {/* Simple Trend Visualization Placeholder */}
-            <div className="mt-8 h-48 w-full bg-zinc-950/30 rounded-2xl border border-zinc-800/50 flex items-center justify-center relative overflow-hidden">
-               <div className="absolute inset-0 opacity-10">
+            <div className="mt-8 h-48 w-full bg-zinc-50 dark:bg-zinc-950/30 rounded-2xl border border-zinc-100 dark:border-zinc-800/50 flex items-center justify-center relative overflow-hidden">
+               <div className="absolute inset-0 opacity-10 dark:opacity-5">
                  <div className="h-full w-full bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:20px_20px]" />
                </div>
                <div className="flex flex-col items-center text-center px-6">
-                 <TrendingUp className="w-8 h-8 text-zinc-700 mb-2" />
+                 <TrendingUp className="w-8 h-8 text-zinc-300 dark:text-zinc-700 mb-2" />
                  <p className="text-xs text-zinc-500 font-medium">Biometric Trend Analysis</p>
-                 <p className="text-[10px] text-zinc-600 mt-1 max-w-[200px]">Perform more scans to unlock detailed weekly and monthly wellness charting.</p>
+                 <p className="text-[10px] text-zinc-400 dark:text-zinc-600 mt-1 max-w-[200px]">Perform more scans to unlock detailed weekly and monthly wellness charting.</p>
                </div>
             </div>
           </CardContent>
@@ -164,55 +164,55 @@ export default async function DashboardPage() {
 
         {/* AI Health Insights */}
         <div className="lg:col-span-4 space-y-6">
-          <Card className="bg-zinc-900/50 border-zinc-800 backdrop-blur-xl overflow-hidden relative">
+          <Card className="bg-white dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 backdrop-blur-xl overflow-hidden relative shadow-sm dark:shadow-none">
             <div className="absolute top-0 right-0 p-4">
               <Brain className="w-5 h-5 text-blue-500/20" />
             </div>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-zinc-900 dark:text-white text-lg">
                 <Zap className="w-4 h-4 text-yellow-500" />
                 AI Summary
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3">
-                <div className="p-3.5 rounded-xl bg-blue-600/5 border border-blue-500/10">
+                <div className="p-3.5 rounded-xl bg-blue-50 dark:bg-blue-600/5 border border-blue-100 dark:border-blue-500/10">
                   <div className="flex items-center gap-2 mb-1">
-                    <Droplets className="w-3.5 h-3.5 text-blue-400" />
-                    <h4 className="text-xs font-bold text-blue-400 uppercase">Hydration</h4>
+                    <Droplets className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
+                    <h4 className="text-xs font-bold text-blue-500 dark:text-blue-400 uppercase">Hydration</h4>
                   </div>
-                  <p className="text-[11px] text-zinc-400 leading-relaxed">Minor signal variance detected. Consider 250ml water before next scan.</p>
+                  <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">Minor signal variance detected. Consider 250ml water before next scan.</p>
                 </div>
                 
-                <div className="p-3.5 rounded-xl bg-purple-600/5 border border-purple-500/10">
+                <div className="p-3.5 rounded-xl bg-purple-50 dark:bg-purple-600/5 border border-purple-100 dark:border-purple-500/10">
                   <div className="flex items-center gap-2 mb-1">
-                    <Moon className="w-3.5 h-3.5 text-purple-400" />
-                    <h4 className="text-xs font-bold text-purple-400 uppercase">Circadian</h4>
+                    <Moon className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400" />
+                    <h4 className="text-xs font-bold text-purple-500 dark:text-purple-400 uppercase">Circadian</h4>
                   </div>
-                  <p className="text-[11px] text-zinc-400 leading-relaxed">Optimal scan time window identified: 08:30 AM - 09:15 AM.</p>
+                  <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">Optimal scan time window identified: 08:30 AM - 09:15 AM.</p>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-emerald-600/5 border border-emerald-500/10">
+                <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-600/5 border border-emerald-100 dark:border-emerald-500/10">
                   <div className="flex items-center gap-2 mb-1">
-                    <Clock className="w-3.5 h-3.5 text-emerald-400" />
-                    <h4 className="text-xs font-bold text-emerald-400 uppercase">Recovery</h4>
+                    <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <h4 className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase">Recovery</h4>
                   </div>
-                  <p className="text-[11px] text-zinc-400 leading-relaxed">Your HRV is 12% above your 7-day average. Peak readiness achieved.</p>
+                  <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">Your HRV is 12% above your 7-day average. Peak readiness achieved.</p>
                 </div>
               </div>
 
-              <Button variant="outline" className="w-full border-zinc-800 bg-zinc-950/50 hover:bg-zinc-900 text-[11px] h-9" asChild>
+              <Button variant="outline" className="w-full border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-[11px] h-9 text-zinc-900 dark:text-white" asChild>
                 <Link href="/copilot">Explore Deep Insights</Link>
               </Button>
             </CardContent>
           </Card>
 
           {/* Health Consistency */}
-          <Card className="bg-zinc-900/50 border-zinc-800 backdrop-blur-xl">
+          <Card className="bg-white dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 backdrop-blur-xl shadow-sm dark:shadow-none">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Consistency</h4>
-                <span className="text-xs font-bold text-emerald-500">{Math.round(consistencyScore)}%</span>
+                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-500">{Math.round(consistencyScore)}%</span>
               </div>
               <div className="flex gap-1.5 h-8 items-end">
                 {[...Array(7)].map((_, i) => {
@@ -222,7 +222,7 @@ export default async function DashboardPage() {
                   return (
                     <div 
                       key={i} 
-                      className={`flex-1 rounded-t-sm transition-all duration-500 ${hasScan ? 'bg-emerald-500/60 h-full' : 'bg-zinc-800 h-2'}`} 
+                      className={`flex-1 rounded-t-sm transition-all duration-500 ${hasScan ? 'bg-emerald-500/60 h-full' : 'bg-zinc-100 dark:bg-zinc-800 h-2'}`} 
                       title={format(day, 'MMM d')}
                     />
                   )
