@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { User, Mail, Calendar, Ruler, Weight } from 'lucide-react'
+import { User, Mail, Calendar, Ruler, Weight, LogOut } from 'lucide-react'
+import LogoutButton from '@/components/auth/LogoutButton'
 
 export default async function ProfilePage() {
   const supabase = await createClient()
@@ -43,6 +44,7 @@ export default async function ProfilePage() {
             <Button variant="outline" className="w-full mt-6 border-zinc-800 bg-zinc-950/50">
               Change Avatar
             </Button>
+            <LogoutButton className="w-full mt-3" />
           </CardContent>
         </Card>
 

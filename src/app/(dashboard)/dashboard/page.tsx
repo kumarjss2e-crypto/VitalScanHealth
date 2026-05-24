@@ -48,14 +48,15 @@ export default async function DashboardPage() {
   // 2. Recovery Score (based on HRV and Stress)
   const recoveryScore = latestScan ? Math.min(100, (latestScan.hrv || 50) + (100 - latestScan.stress_level) / 2) : 0
   
-  // 3. Wellness Consistency
-  const last7DaysScans = (scanHistory as any[])?.filter(s => {
+  // 3. Wellness Consistency & Streak
+  const last7DaysUniqueDays = Array.from(new Set((scanHistory as any[])?.filter(s => {
     const date = new Date(s.created_at)
     const weekAgo = new Date()
     weekAgo.setDate(weekAgo.getDate() - 7)
     return date > weekAgo
-  }) || []
-  const consistencyScore = Math.min(100, (last7DaysScans.length / 7) * 100)
+  }).map(s => format(new Date(s.created_at), 'yyyy-MM-dd')) || []))
+
+  const consistencyScore = Math.min(100, (last7DaysUniqueDays.length / 7) * 100)
 
   // 4. Biometric Stability (HR variance)
   const hrValues = (scanHistory as any[])?.map(s => s.heart_rate).filter(Boolean) as number[] || []
@@ -68,7 +69,7 @@ export default async function DashboardPage() {
     { label: 'Cardio Wellness', value: `${Math.round(cardioScore)}%`, icon: Heart, color: 'text-red-400', desc: 'Heart efficiency' },
     { label: 'Recovery', value: `${Math.round(recoveryScore)}%`, icon: TrendingUp, color: 'text-emerald-400', desc: 'Readiness for activity' },
     { label: 'Stability Index', value: `${Math.round(hrStability)}%`, icon: ShieldCheck, color: 'text-blue-400', desc: 'Biometric consistency' },
-    { label: 'Scan Streak', value: `${last7DaysScans.length} Days`, icon: Zap, color: 'text-yellow-400', desc: 'Consistency streak' },
+    { label: 'Scan Streak', value: `${last7DaysUniqueDays.length} Days`, icon: Zap, color: 'text-yellow-400', desc: 'Consistency streak' },
   ]
 
   const vitals = [

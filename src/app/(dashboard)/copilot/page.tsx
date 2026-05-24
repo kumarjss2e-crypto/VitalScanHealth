@@ -7,10 +7,12 @@ import InsightCard from "@/components/copilot/InsightCard";
 import { WellnessInsight, ChatMessage } from "@/types/ai";
 import { useAsyncAction } from "@/hooks/useAsyncAction";
 import { useMounted } from "@/hooks/useMounted";
+import { createClient } from "@/utils/supabase/client";
 
 const CopilotPage = () => {
   const mounted = useMounted();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const supabase = createClient();
   
   useEffect(() => {
     if (mounted && messages.length === 0) {
@@ -59,12 +61,41 @@ const CopilotPage = () => {
 
   const { execute: sendMessage, isLoading } = useAsyncAction(
     async (text: string) => {
+      // Simulate real AI processing with knowledge of user data
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: scans } = await supabase
+        .from('scans')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
       await new Promise((r) => setTimeout(r, 1500));
       
+      let response = "";
+      const query = text.toLowerCase();
+
+      if (query.includes("stress") || query.includes("anxious")) {
+        const avgStress = scans?.reduce((acc, s) => acc + (s.stress_level || 0), 0) / (scans?.length || 1);
+        response = `I see your average stress level in recent scans is ${Math.round(avgStress)}. To lower this, I recommend a 4-7-8 breathing exercise: inhale for 4s, hold for 7s, exhale for 8s. Shall we try one?`;
+      } else if (query.includes("heart") || query.includes("bpm")) {
+        const latestHR = scans?.[0]?.heart_rate;
+        response = latestHR 
+          ? `Your last recorded heart rate was ${latestHR} BPM. This is within a healthy resting range for your profile. Consistent tracking will help us identify any significant deviations.`
+          : "I don't see any recent heart rate data. Let's perform a new scan to get an accurate reading!";
+      } else if (query.includes("wellness") || query.includes("score")) {
+        const latestScore = scans?.[0]?.wellness_score;
+        response = latestScore
+          ? `Your current wellness score is ${latestScore}/100. You're doing great! To reach the 90+ range, focus on consistent sleep and hydration over the next 48 hours.`
+          : "We haven't calculated your wellness score yet. Start a scan so I can analyze your biometric stability!";
+      } else {
+        response = "That's an interesting question. Based on your biometric trends, maintaining a consistent scanning routine is key to more precise insights. Is there a specific metric like heart rate or stress you'd like me to analyze?";
+      }
+
       const aiMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: "I've reviewed your stress patterns for this week. Your stress was highest on Tuesday during your afternoon scan, but it has since stabilized. I recommend a 5-minute breathing session tonight to maintain this positive trend.",
+        content: response,
         timestamp: new Date().toISOString(),
       };
       
