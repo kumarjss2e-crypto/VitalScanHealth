@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     lifestyle_preferences JSONB, -- Added for onboarding
     health_focus_areas TEXT[], -- Added for onboarding
     onboarding_completed BOOLEAN DEFAULT FALSE,
+    stripe_customer_id TEXT, -- Added for billing
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -23,11 +24,24 @@ CREATE TABLE IF NOT EXISTS public.subscriptions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     plan_id TEXT NOT NULL, -- 'free', 'pro', 'enterprise'
-    status TEXT NOT NULL, -- 'active', 'canceled', 'past_due'
+    status TEXT NOT NULL, -- 'active', 'canceled', 'past_due', 'trialing'
+    stripe_subscription_id TEXT,
+    stripe_price_id TEXT,
     current_period_end TIMESTAMPTZ,
     cancel_at_period_end BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 1.2 Usage Tracking Table
+CREATE TABLE IF NOT EXISTS public.usage_tracking (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    metric TEXT NOT NULL, -- e.g., 'scans'
+    count INTEGER DEFAULT 0,
+    reset_at DATE DEFAULT CURRENT_DATE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(user_id, metric, reset_at)
 );
 
 -- 2. Scans Table
@@ -126,8 +140,12 @@ ALTER TABLE public.user_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.scan_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.device_info ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.usage_tracking ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
+
+-- Usage Tracking: Users can view their own usage
+CREATE POLICY "Users can view own usage" ON public.usage_tracking FOR SELECT USING (auth.uid() = user_id);
 
 -- Subscriptions: Users can view only their own subscription
 CREATE POLICY "Users can view own subscription" ON public.subscriptions FOR SELECT USING (auth.uid() = user_id);
@@ -176,6 +194,17 @@ BEGIN
     VALUES (NEW.id);
     
     RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to increment usage safely
+CREATE OR REPLACE FUNCTION public.increment_usage(u_id UUID, m_name TEXT, r_date DATE)
+RETURNS VOID AS $$
+BEGIN
+    INSERT INTO public.usage_tracking (user_id, metric, count, reset_at)
+    VALUES (u_id, m_name, 1, r_date)
+    ON CONFLICT (user_id, metric, reset_at)
+    DO UPDATE SET count = usage_tracking.count + 1, updated_at = NOW();
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 

@@ -9,17 +9,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ResultsScreen } from "./ResultsScreen";
 import { createClient } from "@/utils/supabase/client";
 import { toast } from "sonner";
+import { PlanLimits } from "@/lib/subscription-limits";
+import { Database } from "@/types/supabase";
+import { ResultData } from "@/types/scan";
 
 type ScanState = "idle" | "ready" | "scanning" | "processing" | "results";
 
-interface ResultData {
-  heartRate: number;
-  spo2: number;
-  stress: string;
-  wellnessScore: number;
+interface ScanContainerProps {
+  limits: PlanLimits;
 }
 
-export function ScanContainer() {
+export function ScanContainer({ limits }: ScanContainerProps) {
   const { status: cameraStatus, error, videoRef, startCamera, stopCamera } = useCamera();
   const { status: detectionStatus, debug } = useFaceDetection(videoRef);
   const [scanState, setScanState] = useState<ScanState>("idle");
@@ -45,86 +45,107 @@ export function ScanContainer() {
         setProgress((prev) => {
           if (prev >= 100) {
             clearInterval(interval);
-            generateResults();
-            setScanState("processing");
             return 100;
           }
           return prev + 1;
         });
       }, 80); // ~8 second scan
     }
-    return () => clearInterval(interval);
-  }, [scanState, debug.vitals]);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [scanState]);
+
+  // Trigger results when progress reaches 100
+  useEffect(() => {
+    if (progress === 100 && scanState === "scanning") {
+      setScanState("processing");
+      generateResults();
+    }
+  }, [progress, scanState]);
 
   const generateResults = () => {
     // USE REAL DATA FROM THE VITALS ENGINE
-    // We fall back to a safe range only if the engine hasn't gathered enough signal yet
-    const realHR = debug.vitals?.heartRate && debug.vitals.heartRate > 0 
-      ? debug.vitals.heartRate 
+    const currentVitals = debug.vitals;
+    
+    const realHR = currentVitals?.heartRate && currentVitals.heartRate > 0 
+      ? currentVitals.heartRate 
       : Math.floor(Math.random() * (82 - 68 + 1)) + 68;
 
-    const realSpO2 = debug.vitals?.spo2 && debug.vitals.spo2 > 0 
-      ? debug.vitals.spo2 
+    const realSpO2 = currentVitals?.spo2 && currentVitals.spo2 > 0 
+      ? currentVitals.spo2 
       : Math.floor(Math.random() * (100 - 98 + 1)) + 98;
 
     const stressLevels = ["Low", "Normal", "Slightly Elevated"];
     const stress = stressLevels[Math.floor(Math.random() * stressLevels.length)];
     
-    // Calculate wellness based on real vitals
+    // Premium Vitals (Mocked for now, but gated by limits)
+    const hrv = Math.floor(Math.random() * (70 - 40 + 1)) + 40;
+    const systolic = Math.floor(Math.random() * (130 - 110 + 1)) + 110;
+    const diastolic = Math.floor(Math.random() * (85 - 70 + 1)) + 70;
+
     const wellnessBase = 90;
     const hrImpact = Math.abs(70 - realHR) > 15 ? -5 : 0;
     const spo2Impact = realSpO2 < 95 ? -10 : 0;
     const wellness = wellnessBase + hrImpact + spo2Impact;
 
-    setResults({
+    const resultData: ResultData = {
       heartRate: realHR,
       spo2: realSpO2,
       stress: stress,
-      wellnessScore: Math.min(100, Math.max(0, wellness))
-    });
+      wellnessScore: Math.min(100, Math.max(0, wellness)),
+      hrv: hrv,
+      bloodPressure: { systolic, diastolic }
+    };
 
-    // Save to Supabase
-    saveToSupabase({
-      heartRate: realHR,
-      spo2: realSpO2,
-      stress: stress,
-      wellnessScore: Math.min(100, Math.max(0, wellness))
-    });
+    setResults(resultData);
+    saveToSupabase(resultData);
   };
 
   const saveToSupabase = async (data: ResultData) => {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) {
-      // GUEST FLOW: Store scan result in local storage for later recovery
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('pending_scan_result', JSON.stringify({
-          ...data,
-          timestamp: new Date().toISOString()
-        }));
-        console.log('Guest scan saved to local storage');
-      }
-      return;
-    }
+    if (!user) return;
 
     try {
-      const { error } = await (supabase.from('scans') as any).insert({
+      // 1. Save scan record
+      const { error: scanError } = await supabase.from('scans').insert({
         user_id: user.id,
         provider: 'vital-scan-v3',
         heart_rate: data.heartRate,
         spo2: data.spo2,
         stress_level: data.stress === 'Low' ? 20 : data.stress === 'Normal' ? 45 : 75,
+        hrv: data.hrv ?? null,
+        systolic_bp: data.bloodPressure?.systolic ?? null,
+        diastolic_bp: data.bloodPressure?.diastolic ?? null,
         wellness_score: data.wellnessScore,
         duration_seconds: 8,
         device_type: 'Web'
-      });
+      } as Database['public']['Tables']['scans']['Insert']);
 
-      if (error) throw error;
-      console.log('Scan saved successfully');
+      if (scanError) {
+        console.error('Database error saving scan:', scanError);
+        toast.error('Failed to save scan results');
+        return;
+      }
+
+      // 2. Increment usage
+      const today = new Date().toISOString().split('T')[0];
+      const { error: usageError } = await supabase.rpc('increment_usage', {
+        u_id: user.id,
+        m_name: 'scans',
+        r_date: today
+      } as Database['public']['Functions']['increment_usage']['Args']);
+
+      if (usageError) {
+        console.error('Error incrementing usage:', usageError);
+      } else {
+        console.log('Scan saved and usage incremented');
+      }
     } catch (err) {
-      console.error('Failed to save scan:', err);
-      toast.error('Failed to sync scan results to cloud');
+      console.error('Unexpected error in saveToSupabase:', err);
+      toast.error('An unexpected error occurred while saving');
     }
   };
 
@@ -167,7 +188,8 @@ export function ScanContainer() {
     return (
       <ResultsScreen 
         data={results} 
-        onReset={handleReset} 
+        onReset={handleReset}
+        limits={limits}
       />
     );
   }

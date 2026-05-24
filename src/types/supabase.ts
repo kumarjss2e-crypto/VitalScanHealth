@@ -23,6 +23,7 @@ export interface Database {
           lifestyle_preferences: Json | null
           health_focus_areas: string[] | null
           onboarding_completed: boolean
+          stripe_customer_id: string | null
           created_at: string
           updated_at: string
         }
@@ -39,6 +40,7 @@ export interface Database {
           lifestyle_preferences?: Json | null
           health_focus_areas?: string[] | null
           onboarding_completed?: boolean
+          stripe_customer_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -55,6 +57,7 @@ export interface Database {
           lifestyle_preferences?: Json | null
           health_focus_areas?: string[] | null
           onboarding_completed?: boolean
+          stripe_customer_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -65,6 +68,8 @@ export interface Database {
           user_id: string
           plan_id: string
           status: string
+          stripe_subscription_id: string | null
+          stripe_price_id: string | null
           current_period_end: string | null
           cancel_at_period_end: boolean
           created_at: string
@@ -75,6 +80,8 @@ export interface Database {
           user_id: string
           plan_id: string
           status: string
+          stripe_subscription_id?: string | null
+          stripe_price_id?: string | null
           current_period_end?: string | null
           cancel_at_period_end?: boolean
           created_at?: string
@@ -85,10 +92,38 @@ export interface Database {
           user_id?: string
           plan_id?: string
           status?: string
+          stripe_subscription_id?: string | null
+          stripe_price_id?: string | null
           current_period_end?: string | null
           cancel_at_period_end?: boolean
           created_at?: string
           updated_at?: string
+        }
+      }
+      usage_tracking: {
+        Row: {
+          id: string
+          user_id: string
+          metric: string
+          count: number
+          reset_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          metric: string
+          count?: number
+          reset_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          metric?: string
+          count?: number
+          reset_at?: string
+          created_at?: string
         }
       }
       scans: {
@@ -263,6 +298,22 @@ export interface Database {
           updated_at?: string
         }
       }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      increment_usage: {
+        Args: {
+          u_id: string
+          m_name: string
+          r_date: string
+        }
+        Returns: void
+      }
+    }
+    Enums: {
+      [_ in never]: never
     }
   }
 }

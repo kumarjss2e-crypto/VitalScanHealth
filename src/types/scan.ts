@@ -23,6 +23,15 @@ export interface ScanResult {
   metadata?: Record<string, any>;
 }
 
+export interface ResultData {
+  heartRate: number;
+  spo2: number;
+  stress: string;
+  wellnessScore: number;
+  hrv?: number;
+  bloodPressure?: { systolic: number; diastolic: number };
+}
+
 export interface RealtimeMetric {
   type: keyof VitalsData | 'signal';
   value: number;

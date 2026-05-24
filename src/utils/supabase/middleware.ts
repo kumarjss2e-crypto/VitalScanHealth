@@ -40,8 +40,12 @@ export async function updateSession(request: NextRequest) {
                      request.nextUrl.pathname.startsWith('/signup') ||
                      request.nextUrl.pathname.startsWith('/auth')
   const isOnboardingPage = request.nextUrl.pathname === '/onboarding'
+  const isApiRoute = request.nextUrl.pathname.startsWith('/api')
 
   if (!user && !isAuthPage && request.nextUrl.pathname !== '/') {
+    if (isApiRoute) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
