@@ -63,8 +63,7 @@ const CopilotPage = () => {
     async (text: string) => {
       // Simulate real AI processing with knowledge of user data
       const { data: { user } } = await supabase.auth.getUser();
-      const { data: scans } = await supabase
-        .from('scans')
+      const { data: scans } = await (supabase.from('scans') as any)
         .select('*')
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false })

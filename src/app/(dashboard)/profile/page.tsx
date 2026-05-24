@@ -14,8 +14,7 @@ export default async function ProfilePage() {
 
   if (!user) return null
   
-  const { data: profileData } = await supabase
-       .from('profiles')
+  const { data: profileData } = await (supabase.from('profiles') as any)
        .select('*')
        .eq('id', user.id)
        .maybeSingle()

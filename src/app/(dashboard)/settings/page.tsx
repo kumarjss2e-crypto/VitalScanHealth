@@ -12,8 +12,7 @@ export default async function SettingsPage() {
 
   if (!user) return null
   
-  const { data: settingsData } = await supabase
-       .from('user_settings')
+  const { data: settingsData } = await (supabase.from('user_settings') as any)
        .select('*')
        .eq('user_id', user.id)
        .maybeSingle()

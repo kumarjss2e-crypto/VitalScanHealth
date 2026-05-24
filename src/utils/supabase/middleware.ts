@@ -48,8 +48,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user) {
-    const { data: profileData } = await supabase
-      .from('profiles')
+    const { data: profileData } = await (supabase.from('profiles') as any)
       .select('onboarding_completed')
       .eq('id', user.id)
       .maybeSingle()

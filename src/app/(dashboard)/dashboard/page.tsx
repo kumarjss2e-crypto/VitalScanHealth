@@ -30,8 +30,7 @@ export default async function DashboardPage() {
   if (!user) return null
   
   // Fetch scan history for calculations
-  const { data: scanHistory } = await supabase
-    .from('scans')
+  const { data: scanHistory } = await (supabase.from('scans') as any)
     .select('*')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })

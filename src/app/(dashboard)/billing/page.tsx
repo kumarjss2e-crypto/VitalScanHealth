@@ -60,8 +60,7 @@ export default async function BillingPage() {
 
   if (!user) return null
   
-  const { data: subscriptionData } = await supabase
-      .from('subscriptions')
+  const { data: subscriptionData } = await (supabase.from('subscriptions') as any)
       .select('*')
       .eq('user_id', user.id)
       .maybeSingle()

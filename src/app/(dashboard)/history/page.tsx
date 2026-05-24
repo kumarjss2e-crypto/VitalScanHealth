@@ -19,8 +19,7 @@ export default async function HistoryPage() {
 
   if (!user) return null
   
-  const { data: scansData } = await supabase
-    .from('scans')
+  const { data: scansData } = await (supabase.from('scans') as any)
     .select('*')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
